@@ -7,10 +7,10 @@ This deploys the module in its simplest form.
 terraform {
   required_version = ">= 1.8.4"
   required_providers {
-    azapi = {
-      source  = "Azure/azapi"
-      version = ">= 1.13.1, < 2.0"
-    }
+    # azapi = {
+    #   source  = "Azure/azapi"
+    #   version = ">= 1.13.1, < 2.0"
+    # }
     azurerm = {
       source  = "hashicorp/azurerm"
       version = ">= 3.90.0, < 4.0.0"
@@ -65,8 +65,6 @@ The following requirements are needed by this module:
 
 - <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (>= 1.8.4)
 
-- <a name="requirement_azapi"></a> [azapi](#requirement\_azapi) (>= 1.13.1, < 2.0)
-
 - <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (>= 3.90.0, < 4.0.0)
 
 ## Resources
@@ -80,17 +78,7 @@ No required inputs.
 
 ## Optional Inputs
 
-The following input variables are optional (have default values):
-
-### <a name="input_enable_telemetry"></a> [enable\_telemetry](#input\_enable\_telemetry)
-
-Description: This variable controls whether or not telemetry is enabled for the module.  
-For more information see <https://aka.ms/avm/telemetryinfo>.  
-If it is set to false, then no telemetry will be collected.
-
-Type: `bool`
-
-Default: `true`
+No optional inputs.
 
 ## Outputs
 
