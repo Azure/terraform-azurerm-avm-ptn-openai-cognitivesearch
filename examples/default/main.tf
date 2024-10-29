@@ -1,63 +1,52 @@
 terraform {
-  required_version = "~> 1.5"
+  required_version = ">= 1.8.4"
   required_providers {
+    azapi = {
+      source  = "Azure/azapi"
+      version = ">= 1.13.1, < 2.0"
+    }
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 3.74"
-    }
-    modtm = {
-      source  = "azure/modtm"
-      version = "~> 0.3"
-    }
-    random = {
-      source  = "hashicorp/random"
-      version = "~> 3.5"
+      version = ">= 3.90.0, < 4.0.0"
     }
   }
 }
 
 provider "azurerm" {
-  features {}
+  skip_provider_registration = true
+  storage_use_azuread        = true
+  features {
+    resource_group {
+      prevent_deletion_if_contains_resources = false
+    }
+  }
 }
-
-
-## Section to provide a random Azure region for the resource group
-# This allows us to randomize the region for the resource group.
-module "regions" {
-  source  = "Azure/avm-utl-regions/azurerm"
-  version = "~> 0.1"
-}
-
-# This allows us to randomize the region for the resource group.
-resource "random_integer" "region_index" {
-  max = length(module.regions.regions) - 1
-  min = 0
-}
-## End of section to provide a random Azure region for the resource group
 
 # This ensures we have unique CAF compliant names for our resources.
 module "naming" {
   source  = "Azure/naming/azurerm"
-  version = "~> 0.3"
-}
-
-# This is required for resource modules
-resource "azurerm_resource_group" "this" {
-  location = module.regions.regions[random_integer.region_index.result].name
-  name     = module.naming.resource_group.name_unique
+  version = "0.4.0"
+  prefix  = ["aap"]
 }
 
 # This is the module call
-# Do not specify location here due to the randomization above.
-# Leaving location as `null` will cause the module to use the resource group location
-# with a data source.
-module "test" {
-  source = "../../"
-  # source             = "Azure/avm-<res/ptn>-<name>/azurerm"
-  # ...
-  location            = azurerm_resource_group.this.location
-  name                = "TODO" # TODO update with module.naming.<RESOURCE_TYPE>.name_unique
-  resource_group_name = azurerm_resource_group.this.name
+module "avm_ptn_aap_openai_cognitivesearch" {
+  source                          = "../../"
+  resource_group_name             = module.naming.resource_group.name_unique
+  location                        = "westus2"
+  virtual_network_name            = module.naming.virtual_network.name_unique
+  network_security_group_app_name = "${module.naming.network_security_group.name}-app"
+  network_security_group_pe_name  = "${module.naming.network_security_group.name}-pe"
+  storage_account_name            = module.naming.storage_account.name_unique
+  # address_space        = ["10.0.0.0/23"]
+  # subnets = {
+  #   subnet1 = {
+  #     address_prefixes = ["10.0.0.0/24"]
+  #     name             = "subnet1"
+  #   }
+  # }
 
-  enable_telemetry = var.enable_telemetry # see variables.tf
+  tags = {
+    test_example = "default"
+  }
 }

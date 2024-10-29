@@ -1,29 +1,88 @@
-# TODO: Replace this dummy resource azurerm_resource_group.TODO with your module resource
-resource "azurerm_resource_group" "TODO" {
+resource "azurerm_resource_group" "rg" {
   location = var.location
-  name     = var.name # calling code must supply the name
-  tags     = var.tags
+  name     = var.resource_group_name
+  tags     = try(merge(var.resource_group_tags, var.tags), {})
 }
 
-# required AVM resources interfaces
-resource "azurerm_management_lock" "this" {
-  count = var.lock != null ? 1 : 0
+module "avm-res-network-virtualnetwork" {
+  source              = "Azure/avm-res-network-virtualnetwork/azurerm"
+  version             = "0.2.3"
+  location            = resource.azurerm_resource_group.rg.location
+  address_space       = var.address_space
+  resource_group_name = resource.azurerm_resource_group.rg.name
+  # subnets             = var.subnets
+  name                = var.virtual_network_name
 
-  lock_level = var.lock.kind
-  name       = coalesce(var.lock.name, "lock-${var.lock.kind}")
-  scope      = azurerm_MY_RESOURCE.this.id # TODO: Replace with your azurerm resource name
-  notes      = var.lock.kind == "CanNotDelete" ? "Cannot delete the resource or its child resources." : "Cannot delete or modify the resource or its child resources."
+  tags = try(merge(var.resource_group_tags, var.tags), {})
 }
 
-resource "azurerm_role_assignment" "this" {
-  for_each = var.role_assignments
+resource "azurerm_subnet" "subnets" {
+  for_each = var.subnets
 
-  principal_id                           = each.value.principal_id
-  scope                                  = azurerm_resource_group.TODO.id # TODO: Replace this dummy resource azurerm_resource_group.TODO with your module resource
-  condition                              = each.value.condition
-  condition_version                      = each.value.condition_version
-  delegated_managed_identity_resource_id = each.value.delegated_managed_identity_resource_id
-  role_definition_id                     = strcontains(lower(each.value.role_definition_id_or_name), lower(local.role_definition_resource_substring)) ? each.value.role_definition_id_or_name : null
-  role_definition_name                   = strcontains(lower(each.value.role_definition_id_or_name), lower(local.role_definition_resource_substring)) ? null : each.value.role_definition_id_or_name
-  skip_service_principal_aad_check       = each.value.skip_service_principal_aad_check
+  name                 = each.value.name
+  resource_group_name  = resource.azurerm_resource_group.rg.name
+  virtual_network_name = module.avm-res-network-virtualnetwork.name
+  address_prefixes     = each.value.address_prefixes
+
 }
+
+## probably need to do resource blocks for subnets so we can associate nsgs at the same time
+## there is no nsg association module either so this will do both
+
+## resource block for azurerm_route_table
+
+## resource block for azurerm_route
+
+module "avm-res-network-networksecuritygroup-app" {
+  source              = "Azure/avm-res-network-networksecuritygroup/azurerm"
+  version             = "0.2.0"
+  location            = var.location
+  resource_group_name = var.resource_group_name
+  name                = var.network_security_group_app_name
+  security_rules      = var.network_security_group_app_security_rules
+}
+
+module "avm-res-network-networksecuritygroup-pe" {
+  source              = "Azure/avm-res-network-networksecuritygroup/azurerm"
+  version             = "0.2.0"
+  location            = var.location
+  resource_group_name = var.resource_group_name
+  name                = var.network_security_group_pe_name
+  security_rules      = var.network_security_group_pe_security_rules
+}
+
+module "avm-res-storage-storageaccount" {
+  source              = "Azure/avm-res-storage-storageaccount/azurerm"
+  version             = "0.1.3"
+  location            = resource.azurerm_resource_group.rg.location
+  resource_group_name = resource.azurerm_resource_group.rg.name
+  account_tier        = var.storage_account_tier
+  name                = var.storage_account_name
+
+  tags = try(merge(var.resource_group_tags, var.tags), {})
+
+}
+
+## resource block for azurerm_sql_server
+
+## resource block for azurerm_sql_database
+
+## resource block for azurerm_redis_cache
+
+## resource block for azurerm_application_insights
+
+# module "avm-res-cognitiveservices-account" {
+#   source  = "Azure/avm-res-cognitiveservices-account/azurerm"
+#   version = "0.1.1"
+#   # insert the 5 required variables here
+# }
+
+## resource block for azurerm_app_service_plan
+
+## resource block for azurerm_linux_web_app
+
+## resource block for azurerm_private_endpoint
+
+## resource block for azurerm_public_ip
+
+## resource block for azurerm_application_gateway
