@@ -19,11 +19,10 @@ module "avm-res-network-virtualnetwork" {
 resource "azurerm_subnet" "subnets" {
   for_each = var.subnets
 
+  address_prefixes     = each.value.address_prefixes
   name                 = each.value.name
   resource_group_name  = resource.azurerm_resource_group.rg.name
   virtual_network_name = module.avm-res-network-virtualnetwork.name
-  address_prefixes     = each.value.address_prefixes
-
 }
 
 ## probably need to do resource blocks for subnets so we can associate nsgs at the same time
