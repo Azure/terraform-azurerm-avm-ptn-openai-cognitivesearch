@@ -11,7 +11,7 @@ module "avm-res-network-virtualnetwork" {
   address_space       = var.address_space
   resource_group_name = resource.azurerm_resource_group.rg.name
   # subnets             = var.subnets
-  name                = var.virtual_network_name
+  name = var.virtual_network_name
 
   tags = try(merge(var.resource_group_tags, var.tags), {})
 }
