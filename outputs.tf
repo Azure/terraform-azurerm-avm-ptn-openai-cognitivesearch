@@ -32,3 +32,8 @@ output "service_plan_resource_id" {
   description = "The resource ID of the App Service Plan."
   value       = azurerm_service_plan.plan.id
 }
+
+output "resource_id" {
+  description = "The resource ID of the OpenAI service"
+  value       = azurerm_cognitive_account.openai.id
+}
