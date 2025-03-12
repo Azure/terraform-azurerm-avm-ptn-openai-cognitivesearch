@@ -26,7 +26,7 @@ The following requirements are needed by this module:
 
 - <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (~> 1.5)
 
-- <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (~> 3.71)
+- <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (~> 4.0)
 
 - <a name="requirement_modtm"></a> [modtm](#requirement\_modtm) (~> 0.3)
 
@@ -36,16 +36,20 @@ The following requirements are needed by this module:
 
 The following resources are used by this module:
 
+- [azurerm_api_management.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/api_management) (resource)
 - [azurerm_application_insights.appinsights](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/application_insights) (resource)
 - [azurerm_cognitive_account.document_intelligence](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/cognitive_account) (resource)
 - [azurerm_cognitive_account.openai](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/cognitive_account) (resource)
+- [azurerm_linux_web_app.apiapp](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/linux_web_app) (resource)
 - [azurerm_linux_web_app.webapp](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/linux_web_app) (resource)
 - [azurerm_monitor_action_group.smart_detection](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/monitor_action_group) (resource)
+- [azurerm_resource_group.openai_rg](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
 - [azurerm_search_service.search](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/search_service) (resource)
 - [azurerm_service_plan.plan](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/service_plan) (resource)
 - [modtm_telemetry.telemetry](https://registry.terraform.io/providers/azure/modtm/latest/docs/resources/telemetry) (resource)
 - [random_uuid.telemetry](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/uuid) (resource)
 - [azurerm_client_config.telemetry](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/client_config) (data source)
+- [azurerm_resource_group.existing](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/resource_group) (data source)
 - [modtm_module_source.telemetry](https://registry.terraform.io/providers/azure/modtm/latest/docs/data-sources/module_source) (data source)
 
 <!-- markdownlint-disable MD013 -->
@@ -59,21 +63,181 @@ Description: Azure region where the resource should be deployed.
 
 Type: `string`
 
-### <a name="input_name"></a> [name](#input\_name)
+### <a name="input_subscription_id"></a> [subscription\_id](#input\_subscription\_id)
 
-Description: The name of the this resource.
-
-Type: `string`
-
-### <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name)
-
-Description: The resource group where the resources will be deployed.
+Description: The Azure subscription ID.
 
 Type: `string`
 
 ## Optional Inputs
 
 The following input variables are optional (have default values):
+
+### <a name="input_api_management"></a> [api\_management](#input\_api\_management)
+
+Description: Attributes for the API Management resource
+
+Type:
+
+```hcl
+object({
+    publisher_email = string
+    publisher_name  = string
+    sku_name        = string
+    zones           = list(string)
+  })
+```
+
+Default:
+
+```json
+{
+  "publisher_email": "na@na.na",
+  "publisher_name": "na",
+  "sku_name": "Premium_2",
+  "zones": [
+    "1",
+    "2"
+  ]
+}
+```
+
+### <a name="input_apiapp_settings"></a> [apiapp\_settings](#input\_apiapp\_settings)
+
+Description: Configuration settings for the api app including authentication, network access, and site configuration options
+
+Type:
+
+```hcl
+object({
+    ftp_publish_basic_authentication_enabled       = bool
+    https_only                                     = bool
+    public_network_access_enabled                  = bool
+    webdeploy_publish_basic_authentication_enabled = bool
+
+    site_config = object({
+      ftps_state                        = string
+      ip_restriction_default_action     = string
+      scm_ip_restriction_default_action = string
+      vnet_route_all_enabled            = bool
+    })
+  })
+```
+
+Default:
+
+```json
+{
+  "ftp_publish_basic_authentication_enabled": false,
+  "https_only": true,
+  "public_network_access_enabled": false,
+  "site_config": {
+    "ftps_state": "FtpsOnly",
+    "ip_restriction_default_action": "Deny",
+    "scm_ip_restriction_default_action": "Deny",
+    "vnet_route_all_enabled": true
+  },
+  "webdeploy_publish_basic_authentication_enabled": false
+}
+```
+
+### <a name="input_app_service_inbound_security_rules"></a> [app\_service\_inbound\_security\_rules](#input\_app\_service\_inbound\_security\_rules)
+
+Description: Security rules for the App Service inbound NSG
+
+Type:
+
+```hcl
+map(object({
+    name                       = string
+    priority                   = number
+    direction                  = string
+    access                     = string
+    protocol                   = string
+    source_port_range          = string
+    destination_port_range     = string
+    source_address_prefix      = string
+    destination_address_prefix = string
+  }))
+```
+
+Default:
+
+```json
+{
+  "allow_inbound_from_apim": {
+    "access": "Allow",
+    "destination_address_prefix": "10.0.1.0/24",
+    "destination_port_range": "*",
+    "direction": "Inbound",
+    "name": "AllowInboundFromApimToAppServiceInbound",
+    "priority": 100,
+    "protocol": "*",
+    "source_address_prefix": "10.0.0.0/24",
+    "source_port_range": "*"
+  },
+  "allow_outbound_to_apim": {
+    "access": "Allow",
+    "destination_address_prefix": "10.0.0.0/24",
+    "destination_port_range": "*",
+    "direction": "Outbound",
+    "name": "AllowOutboundFromAppServiceInboundToApim",
+    "priority": 100,
+    "protocol": "*",
+    "source_address_prefix": "10.0.1.0/24",
+    "source_port_range": "*"
+  }
+}
+```
+
+### <a name="input_app_service_outbound_security_rules"></a> [app\_service\_outbound\_security\_rules](#input\_app\_service\_outbound\_security\_rules)
+
+Description: Security rules for the App Service outbound NSG
+
+Type:
+
+```hcl
+map(object({
+    name                       = string
+    priority                   = number
+    direction                  = string
+    access                     = string
+    protocol                   = string
+    source_port_range          = string
+    destination_port_range     = string
+    source_address_prefix      = string
+    destination_address_prefix = string
+  }))
+```
+
+Default:
+
+```json
+{
+  "allow_inbound_from_private_endpoint": {
+    "access": "Allow",
+    "destination_address_prefix": "10.0.2.0/24",
+    "destination_port_range": "*",
+    "direction": "Inbound",
+    "name": "AllowInboundFromPrivateEndpointToAppServiceOutbound",
+    "priority": 100,
+    "protocol": "*",
+    "source_address_prefix": "10.0.3.0/24",
+    "source_port_range": "*"
+  },
+  "allow_outbound_to_private_endpoint": {
+    "access": "Allow",
+    "destination_address_prefix": "10.0.3.0/24",
+    "destination_port_range": "*",
+    "direction": "Outbound",
+    "name": "AllowOutboundFromAppServiceOutboundToPrivateEndpoint",
+    "priority": 100,
+    "protocol": "*",
+    "source_address_prefix": "10.0.2.0/24",
+    "source_port_range": "*"
+  }
+}
+```
 
 ### <a name="input_app_service_sku"></a> [app\_service\_sku](#input\_app\_service\_sku)
 
@@ -91,6 +255,14 @@ Type: `string`
 
 Default: `"S0"`
 
+### <a name="input_create_resource_group"></a> [create\_resource\_group](#input\_create\_resource\_group)
+
+Description: Confirmation if Resource Group should be created by the root module or if it already exists
+
+Type: `bool`
+
+Default: `false`
+
 ### <a name="input_enable_telemetry"></a> [enable\_telemetry](#input\_enable\_telemetry)
 
 Description: This variable controls whether or not telemetry is enabled for the module.  
@@ -107,33 +279,72 @@ Description: Environment name for resource naming
 
 Type: `string`
 
-Default: `"oaiavm"`
+Default: `"dev"`
 
-### <a name="input_lock"></a> [lock](#input\_lock)
+### <a name="input_name"></a> [name](#input\_name)
 
-Description: Controls the Resource Lock configuration for this resource. The following properties can be specified:
+Description: The name string to be applied to all resource names
 
-- `kind` - (Required) The type of lock. Possible values are `\"CanNotDelete\"` and `\"ReadOnly\"`.
-- `name` - (Optional) The name of the lock. If not specified, a name will be generated based on the `kind` value. Changing this forces the creation of a new resource.
+Type: `string`
+
+Default: `"oaiavmptn"`
+
+### <a name="input_private_endpoint_security_rules"></a> [private\_endpoint\_security\_rules](#input\_private\_endpoint\_security\_rules)
+
+Description: Security rules for the Private Endpoint NSG
 
 Type:
 
 ```hcl
-object({
-    kind = string
-    name = optional(string, null)
-  })
+map(object({
+    name                       = string
+    priority                   = number
+    direction                  = string
+    access                     = string
+    protocol                   = string
+    source_port_range          = string
+    destination_port_range     = string
+    source_address_prefix      = string
+    destination_address_prefix = string
+  }))
 ```
 
-Default: `null`
+Default:
 
-### <a name="input_log_analytics_workspace_id"></a> [log\_analytics\_workspace\_id](#input\_log\_analytics\_workspace\_id)
+```json
+{
+  "allow_inbound_from_app_service_outbound": {
+    "access": "Allow",
+    "destination_address_prefix": "10.0.3.0/24",
+    "destination_port_range": "*",
+    "direction": "Inbound",
+    "name": "AllowInboundFromAppServiceOutboundToPrivateEndpoint",
+    "priority": 100,
+    "protocol": "*",
+    "source_address_prefix": "10.0.2.0/24",
+    "source_port_range": "*"
+  },
+  "allow_outbound_to_app_service_outbound": {
+    "access": "Allow",
+    "destination_address_prefix": "10.0.2.0/24",
+    "destination_port_range": "*",
+    "direction": "Outbound",
+    "name": "AllowOutboundFromPrivateEndpointToAppServiceOutbound",
+    "priority": 100,
+    "protocol": "*",
+    "source_address_prefix": "10.0.3.0/24",
+    "source_port_range": "*"
+  }
+}
+```
 
-Description: Resource ID of Log Analytics Workspace
+### <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name)
+
+Description: The resource group where the resources will be deployed.
 
 Type: `string`
 
-Default: `"/subscriptions/08b6b8ba-e32d-484d-9052-d4e88f050899/resourceGroups/DefaultResourceGroup-CCAN/providers/Microsoft.OperationalInsights/workspaces/DefaultWorkspace-08b6b8ba-e32d-484d-9052-d4e88f050899-CCAN"`
+Default: `"avm-ptn-openai-cognitivesearch-rg"`
 
 ### <a name="input_search_sku"></a> [search\_sku](#input\_search\_sku)
 
@@ -161,6 +372,20 @@ Default:
 }
 ```
 
+### <a name="input_tags"></a> [tags](#input\_tags)
+
+Description: Tags to be applied to all resources
+
+Type: `map(string)`
+
+Default:
+
+```json
+{
+  "Environment": "dev"
+}
+```
+
 ### <a name="input_vnet_address_space"></a> [vnet\_address\_space](#input\_vnet\_address\_space)
 
 Description: Address space for the virtual network
@@ -175,9 +400,76 @@ Default:
 ]
 ```
 
+### <a name="input_webapp_settings"></a> [webapp\_settings](#input\_webapp\_settings)
+
+Description: Configuration settings for the web app including authentication, network access, and site configuration options
+
+Type:
+
+```hcl
+object({
+    ftp_publish_basic_authentication_enabled       = bool
+    https_only                                     = bool
+    public_network_access_enabled                  = bool
+    webdeploy_publish_basic_authentication_enabled = bool
+
+    site_config = object({
+      ftps_state                        = string
+      ip_restriction_default_action     = string
+      scm_ip_restriction_default_action = string
+      vnet_route_all_enabled            = bool
+    })
+  })
+```
+
+Default:
+
+```json
+{
+  "ftp_publish_basic_authentication_enabled": false,
+  "https_only": true,
+  "public_network_access_enabled": false,
+  "site_config": {
+    "ftps_state": "FtpsOnly",
+    "ip_restriction_default_action": "Deny",
+    "scm_ip_restriction_default_action": "Deny",
+    "vnet_route_all_enabled": true
+  },
+  "webdeploy_publish_basic_authentication_enabled": false
+}
+```
+
 ## Outputs
 
-No outputs.
+The following outputs are exported:
+
+### <a name="output_application_insights_resource_id"></a> [application\_insights\_resource\_id](#output\_application\_insights\_resource\_id)
+
+Description: The resource ID of the Application Insights.
+
+### <a name="output_cognitive_account_resource_id"></a> [cognitive\_account\_resource\_id](#output\_cognitive\_account\_resource\_id)
+
+Description: The resource ID of the OpenAI cognitive account.
+
+### <a name="output_document_intelligence_resource_id"></a> [document\_intelligence\_resource\_id](#output\_document\_intelligence\_resource\_id)
+
+Description: The resource ID of the Document Intelligence cognitive account.
+
+### <a name="output_linux_web_app_resource_id"></a> [linux\_web\_app\_resource\_id](#output\_linux\_web\_app\_resource\_id)
+
+Description: The resource ID of the Linux Web App.
+
+### <a name="output_monitor_action_group_resource_id"></a> [monitor\_action\_group\_resource\_id](#output\_monitor\_action\_group\_resource\_id)
+
+Description: The resource ID of the Monitor Action Group.
+
+### <a name="output_search_service_resource_id"></a> [search\_service\_resource\_id](#output\_search\_service\_resource\_id)
+
+Description: The resource ID of the Azure Search Service.
+
+### <a name="output_service_plan_resource_id"></a> [service\_plan\_resource\_id](#output\_service\_plan\_resource\_id)
+
+Description: The resource ID of the App Service Plan.
 
 ## Modules
 

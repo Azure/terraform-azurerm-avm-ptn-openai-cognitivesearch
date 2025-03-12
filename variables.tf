@@ -4,22 +4,151 @@ variable "location" {
   nullable    = false
 }
 
-variable "name" {
+variable "subscription_id" {
   type        = string
-  description = "The name of the this resource."
-
-  validation {
-    condition     = can(regex("TODO", var.name))
-    error_message = "The name must be TODO." # TODO remove the example below once complete:
-    #condition     = can(regex("^[a-z0-9]{5,50}$", var.name))
-    #error_message = "The name must be between 5 and 50 characters long and can only contain lowercase letters and numbers."
-  }
+  description = "The Azure subscription ID."
 }
 
-# This is required for most resource modules
-variable "resource_group_name" {
+variable "api_management" {
+  type = object({
+    publisher_email = string
+    publisher_name  = string
+    sku_name        = string
+    zones           = list(string)
+  })
+  default = {
+    publisher_email = "na@na.na"
+    publisher_name  = "na"
+    sku_name        = "Premium_2"
+    zones           = ["1", "2"]
+  }
+  description = "Attributes for the API Management resource"
+}
+
+variable "apiapp_settings" {
+  type = object({
+    ftp_publish_basic_authentication_enabled       = bool
+    https_only                                     = bool
+    public_network_access_enabled                  = bool
+    webdeploy_publish_basic_authentication_enabled = bool
+
+    site_config = object({
+      ftps_state                        = string
+      ip_restriction_default_action     = string
+      scm_ip_restriction_default_action = string
+      vnet_route_all_enabled            = bool
+    })
+  })
+  default = {
+    ftp_publish_basic_authentication_enabled       = false
+    https_only                                     = true
+    public_network_access_enabled                  = false
+    webdeploy_publish_basic_authentication_enabled = false
+
+    site_config = {
+      ftps_state                        = "FtpsOnly"
+      ip_restriction_default_action     = "Deny"
+      scm_ip_restriction_default_action = "Deny"
+      vnet_route_all_enabled            = true
+    }
+  }
+  description = "Configuration settings for the api app including authentication, network access, and site configuration options"
+}
+
+variable "app_service_inbound_security_rules" {
+  type = map(object({
+    name                       = string
+    priority                   = number
+    direction                  = string
+    access                     = string
+    protocol                   = string
+    source_port_range          = string
+    destination_port_range     = string
+    source_address_prefix      = string
+    destination_address_prefix = string
+  }))
+  default = {
+    allow_inbound_from_apim = {
+      name                       = "AllowInboundFromApimToAppServiceInbound"
+      priority                   = 100
+      direction                  = "Inbound"
+      access                     = "Allow"
+      protocol                   = "*"
+      source_port_range          = "*"
+      destination_port_range     = "*"
+      source_address_prefix      = "10.0.0.0/24"
+      destination_address_prefix = "10.0.1.0/24"
+    },
+    allow_outbound_to_apim = {
+      name                       = "AllowOutboundFromAppServiceInboundToApim"
+      priority                   = 100
+      direction                  = "Outbound"
+      access                     = "Allow"
+      protocol                   = "*"
+      source_port_range          = "*"
+      destination_port_range     = "*"
+      source_address_prefix      = "10.0.1.0/24"
+      destination_address_prefix = "10.0.0.0/24"
+    }
+  }
+  description = "Security rules for the App Service inbound NSG"
+}
+
+variable "app_service_outbound_security_rules" {
+  type = map(object({
+    name                       = string
+    priority                   = number
+    direction                  = string
+    access                     = string
+    protocol                   = string
+    source_port_range          = string
+    destination_port_range     = string
+    source_address_prefix      = string
+    destination_address_prefix = string
+  }))
+  default = {
+    allow_inbound_from_private_endpoint = {
+      name                       = "AllowInboundFromPrivateEndpointToAppServiceOutbound"
+      priority                   = 100
+      direction                  = "Inbound"
+      access                     = "Allow"
+      protocol                   = "*"
+      source_port_range          = "*"
+      destination_port_range     = "*"
+      source_address_prefix      = "10.0.3.0/24"
+      destination_address_prefix = "10.0.2.0/24"
+    },
+    allow_outbound_to_private_endpoint = {
+      name                       = "AllowOutboundFromAppServiceOutboundToPrivateEndpoint"
+      priority                   = 100
+      direction                  = "Outbound"
+      access                     = "Allow"
+      protocol                   = "*"
+      source_port_range          = "*"
+      destination_port_range     = "*"
+      source_address_prefix      = "10.0.2.0/24"
+      destination_address_prefix = "10.0.3.0/24"
+    }
+  }
+  description = "Security rules for the App Service outbound NSG"
+}
+
+variable "app_service_sku" {
   type        = string
-  description = "The resource group where the resources will be deployed."
+  default     = "P0v3"
+  description = "SKU for App Service Plan"
+}
+
+variable "cognitive_services_sku" {
+  type        = string
+  default     = "S0"
+  description = "SKU for Cognitive Services"
+}
+
+variable "create_resource_group" {
+  type        = bool
+  default     = false
+  description = "Confirmation if Resource Group should be created by the root module or if it already exists"
 }
 
 variable "enable_telemetry" {
@@ -33,69 +162,121 @@ DESCRIPTION
   nullable    = false
 }
 
-variable "lock" {
-  type = object({
-    kind = string
-    name = optional(string, null)
-  })
-  default     = null
-  description = <<DESCRIPTION
-Controls the Resource Lock configuration for this resource. The following properties can be specified:
-
-- `kind` - (Required) The type of lock. Possible values are `\"CanNotDelete\"` and `\"ReadOnly\"`.
-- `name` - (Optional) The name of the lock. If not specified, a name will be generated based on the `kind` value. Changing this forces the creation of a new resource.
-DESCRIPTION
-
-  validation {
-    condition     = var.lock != null ? contains(["CanNotDelete", "ReadOnly"], var.lock.kind) : true
-    error_message = "The lock level must be one of: 'None', 'CanNotDelete', or 'ReadOnly'."
-  }
-}
-
 variable "environment" {
   type        = string
+  default     = "dev"
   description = "Environment name for resource naming"
-  default     = "oaiavm"
 }
 
-variable "vnet_address_space" {
-  type        = list(string)
-  description = "Address space for the virtual network"
-  default     = ["10.0.0.0/16"]
-}
-
-variable "subnet_prefixes" {
-  type = map(string)
-  description = "Address prefixes for subnets"
-  default = {
-    apim                = "10.0.0.0/24"
-    app_service_inbound = "10.0.1.0/24"
-    app_service_outbound = "10.0.2.0/24"
-    private_endpoint    = "10.0.3.0/24"
-    reserved           = "10.0.4.0/24"
-  }
-}
-
-variable "app_service_sku" {
+variable "name" {
   type        = string
-  description = "SKU for App Service Plan"
-  default     = "P0v3"
+  default     = "oaiavmptn"
+  description = "The name string to be applied to all resource names"
+}
+
+variable "private_endpoint_security_rules" {
+  type = map(object({
+    name                       = string
+    priority                   = number
+    direction                  = string
+    access                     = string
+    protocol                   = string
+    source_port_range          = string
+    destination_port_range     = string
+    source_address_prefix      = string
+    destination_address_prefix = string
+  }))
+  default = {
+    allow_inbound_from_app_service_outbound = {
+      name                       = "AllowInboundFromAppServiceOutboundToPrivateEndpoint"
+      priority                   = 100
+      direction                  = "Inbound"
+      access                     = "Allow"
+      protocol                   = "*"
+      source_port_range          = "*"
+      destination_port_range     = "*"
+      source_address_prefix      = "10.0.2.0/24"
+      destination_address_prefix = "10.0.3.0/24"
+    },
+    allow_outbound_to_app_service_outbound = {
+      name                       = "AllowOutboundFromPrivateEndpointToAppServiceOutbound"
+      priority                   = 100
+      direction                  = "Outbound"
+      access                     = "Allow"
+      protocol                   = "*"
+      source_port_range          = "*"
+      destination_port_range     = "*"
+      source_address_prefix      = "10.0.3.0/24"
+      destination_address_prefix = "10.0.2.0/24"
+    }
+  }
+  description = "Security rules for the Private Endpoint NSG"
+}
+
+variable "resource_group_name" {
+  type        = string
+  default     = "avm-ptn-openai-cognitivesearch-rg"
+  description = "The resource group where the resources will be deployed."
 }
 
 variable "search_sku" {
   type        = string
-  description = "SKU for Azure Search Service"
   default     = "standard"
+  description = "SKU for Azure Search Service"
 }
 
-variable "cognitive_services_sku" {
-  type        = string
-  description = "SKU for Cognitive Services"
-  default     = "S0"
+variable "subnet_prefixes" {
+  type = map(string)
+  default = {
+    apim                 = "10.0.0.0/24"
+    app_service_inbound  = "10.0.1.0/24"
+    app_service_outbound = "10.0.2.0/24"
+    private_endpoint     = "10.0.3.0/24"
+    reserved             = "10.0.4.0/24"
+  }
+  description = "Address prefixes for subnets"
 }
 
-variable "log_analytics_workspace_id" {
-  type        = string
-  description = "Resource ID of Log Analytics Workspace"
-  default     = "/subscriptions/08b6b8ba-e32d-484d-9052-d4e88f050899/resourceGroups/DefaultResourceGroup-CCAN/providers/Microsoft.OperationalInsights/workspaces/DefaultWorkspace-08b6b8ba-e32d-484d-9052-d4e88f050899-CCAN"
-} 
+variable "tags" {
+  type = map(string)
+  default = {
+    Environment = "dev"
+  }
+  description = "Tags to be applied to all resources"
+}
+
+variable "vnet_address_space" {
+  type        = list(string)
+  default     = ["10.0.0.0/16"]
+  description = "Address space for the virtual network"
+}
+
+variable "webapp_settings" {
+  type = object({
+    ftp_publish_basic_authentication_enabled       = bool
+    https_only                                     = bool
+    public_network_access_enabled                  = bool
+    webdeploy_publish_basic_authentication_enabled = bool
+
+    site_config = object({
+      ftps_state                        = string
+      ip_restriction_default_action     = string
+      scm_ip_restriction_default_action = string
+      vnet_route_all_enabled            = bool
+    })
+  })
+  default = {
+    ftp_publish_basic_authentication_enabled       = false
+    https_only                                     = true
+    public_network_access_enabled                  = false
+    webdeploy_publish_basic_authentication_enabled = false
+
+    site_config = {
+      ftps_state                        = "FtpsOnly"
+      ip_restriction_default_action     = "Deny"
+      scm_ip_restriction_default_action = "Deny"
+      vnet_route_all_enabled            = true
+    }
+  }
+  description = "Configuration settings for the web app including authentication, network access, and site configuration options"
+}

@@ -1,3 +1,8 @@
+variable "subscription_id" {
+  type        = string
+  description = "The Azure subscription ID."
+}
+
 variable "enable_telemetry" {
   type        = bool
   default     = true
