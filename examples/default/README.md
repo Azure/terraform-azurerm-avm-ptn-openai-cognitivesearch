@@ -18,11 +18,6 @@ terraform {
   }
 }
 
-provider "azurerm" {
-  features {}
-  subscription_id = var.subscription_id
-}
-
 ## Section to provide a random Azure region for the resource group
 # This allows us to randomize the region for the resource group.
 module "regions" {
@@ -60,7 +55,6 @@ module "test" {
   name                = "avmptnopenai-default"
   resource_group_name = azurerm_resource_group.this.name
   enable_telemetry    = var.enable_telemetry
-  subscription_id     = var.subscription_id
 }
 ```
 
@@ -85,13 +79,7 @@ The following resources are used by this module:
 <!-- markdownlint-disable MD013 -->
 ## Required Inputs
 
-The following input variables are required:
-
-### <a name="input_subscription_id"></a> [subscription\_id](#input\_subscription\_id)
-
-Description: The Azure subscription ID.
-
-Type: `string`
+No required inputs.
 
 ## Optional Inputs
 

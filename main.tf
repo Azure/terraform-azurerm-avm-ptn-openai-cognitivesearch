@@ -1,5 +1,6 @@
 resource "azurerm_resource_group" "openai_rg" {
   count = var.create_resource_group ? 1 : 0
+
   location = var.location
   name     = var.resource_group_name
   tags     = var.tags

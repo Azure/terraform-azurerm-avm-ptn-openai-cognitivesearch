@@ -49,7 +49,6 @@ The following resources are used by this module:
 - [modtm_telemetry.telemetry](https://registry.terraform.io/providers/azure/modtm/latest/docs/resources/telemetry) (resource)
 - [random_uuid.telemetry](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/uuid) (resource)
 - [azurerm_client_config.telemetry](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/client_config) (data source)
-- [azurerm_resource_group.existing](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/resource_group) (data source)
 - [modtm_module_source.telemetry](https://registry.terraform.io/providers/azure/modtm/latest/docs/data-sources/module_source) (data source)
 
 <!-- markdownlint-disable MD013 -->
@@ -60,12 +59,6 @@ The following input variables are required:
 ### <a name="input_location"></a> [location](#input\_location)
 
 Description: Azure region where the resource should be deployed.
-
-Type: `string`
-
-### <a name="input_subscription_id"></a> [subscription\_id](#input\_subscription\_id)
-
-Description: The Azure subscription ID.
 
 Type: `string`
 
@@ -374,17 +367,11 @@ Default:
 
 ### <a name="input_tags"></a> [tags](#input\_tags)
 
-Description: Tags to be applied to all resources
+Description: (Optional) Tags of the resource.
 
 Type: `map(string)`
 
-Default:
-
-```json
-{
-  "Environment": "dev"
-}
-```
+Default: `null`
 
 ### <a name="input_vnet_address_space"></a> [vnet\_address\_space](#input\_vnet\_address\_space)
 
