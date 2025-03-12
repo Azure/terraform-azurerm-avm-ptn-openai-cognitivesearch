@@ -4,11 +4,6 @@ variable "location" {
   nullable    = false
 }
 
-variable "subscription_id" {
-  type        = string
-  description = "The Azure subscription ID."
-}
-
 variable "api_management" {
   type = object({
     publisher_email = string
@@ -239,10 +234,8 @@ variable "subnet_prefixes" {
 
 variable "tags" {
   type = map(string)
-  default = {
-    Environment = "dev"
-  }
-  description = "Tags to be applied to all resources"
+  default = null
+  description = "(Optional) Tags of the resource."
 }
 
 variable "vnet_address_space" {
