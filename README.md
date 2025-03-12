@@ -450,6 +450,10 @@ Description: The resource ID of the Linux Web App.
 
 Description: The resource ID of the Monitor Action Group.
 
+### <a name="output_resource_id"></a> [resource\_id](#output\_resource\_id)
+
+Description: The resource ID of the OpenAI service
+
 ### <a name="output_search_service_resource_id"></a> [search\_service\_resource\_id](#output\_search\_service\_resource\_id)
 
 Description: The resource ID of the Azure Search Service.

@@ -23,6 +23,11 @@ output "monitor_action_group_resource_id" {
   value       = azurerm_monitor_action_group.smart_detection.id
 }
 
+output "resource_id" {
+  description = "The resource ID of the OpenAI service"
+  value       = azurerm_cognitive_account.openai.id
+}
+
 output "search_service_resource_id" {
   description = "The resource ID of the Azure Search Service."
   value       = azurerm_search_service.search.id
@@ -31,9 +36,4 @@ output "search_service_resource_id" {
 output "service_plan_resource_id" {
   description = "The resource ID of the App Service Plan."
   value       = azurerm_service_plan.plan.id
-}
-
-output "resource_id" {
-  description = "The resource ID of the OpenAI service"
-  value       = azurerm_cognitive_account.openai.id
 }
