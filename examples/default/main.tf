@@ -13,7 +13,11 @@ terraform {
 }
 
 provider "azurerm" {
-  features {}
+  features {
+    resource_group {
+      prevent_deletion_if_contains_resources = false
+    }
+  }
 }
 
 ## Section to provide a random Azure region for the resource group
@@ -38,7 +42,6 @@ module "naming" {
 
 # This is required for resource modules
 resource "azurerm_resource_group" "this" {
-  # location = module.regions.regions[random_integer.region_index.result].name
   location = "CanadaCentral"
   name     = "${module.naming.resource_group.name_unique}-default"
 }

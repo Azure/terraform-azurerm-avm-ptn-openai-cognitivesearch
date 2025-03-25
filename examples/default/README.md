@@ -1,7 +1,7 @@
 <!-- BEGIN_TF_DOCS -->
 # Default example
 
-This deploys the module in its simplest form.
+This deploys the module in its simplest form using default parameter values
 
 ```hcl
 terraform {
@@ -14,6 +14,14 @@ terraform {
     random = {
       source  = "hashicorp/random"
       version = "~> 3.5"
+    }
+  }
+}
+
+provider "azurerm" {
+  features {
+    resource_group {
+      prevent_deletion_if_contains_resources = false
     }
   }
 }
@@ -40,7 +48,6 @@ module "naming" {
 
 # This is required for resource modules
 resource "azurerm_resource_group" "this" {
-  # location = module.regions.regions[random_integer.region_index.result].name
   location = "CanadaCentral"
   name     = "${module.naming.resource_group.name_unique}-default"
 }
