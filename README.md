@@ -1,13 +1,90 @@
 <!-- BEGIN_TF_DOCS -->
-# terraform-azurerm-avm-template
+# Terraform Verified Pattern Module for OpenAI Cognitive Search
 
-This is a template repo for Terraform Azure Verified Modules.
+This codebase provisions and configures Azure resources using Terraform for an OpenAI Cognitive Search pattern. It focuses on deploying Azure OpenAI Search and Document Intelligent services, Cognitive Account, and Azure Web Apps as the front end to the OpenAI services.
 
-Things to do:
+## Features:
+- Automated creation of Azure Resource Groups, Virtual Networks, and Network Security Groups.
+- Deployment of Azure OpenAI services and Cognitive Search.
+- Configuration of private endpoints for secure access to OpenAI services.
 
-1. Set up a GitHub repo environment called `test`.
-1. Configure environment protection rule to ensure that approval is required before deploying to this environment.
-1. Install Docker Desktop to run tests
+## Example
+```terraform
+resource "azurerm_resource_group" "this" {
+  location = "CanadaCentral"
+  name     = "rg-avm-ptn-openai"
+}
+
+module "example" {
+  source              = "../../"
+  location            = azurerm_resource_group.this.location
+  name                = "avmptnopenai-default"
+  resource_group_name = azurerm_resource_group.this.name
+  enable_telemetry    = var.enable_telemetry
+}
+```
+
+## Architecture Diagram
+```mermaid
+flowchart TB
+    %% Main Resource Group container
+    subgraph RG["Resource Group (openai_rg)"]
+        %% Virtual Network with all subnets
+        subgraph VNET["Virtual Network"]
+            %% APIM Subnet
+            subgraph APIM_SUBNET["ApimSubnet"]
+                APIM_NSG["APIM NSG"]
+                %% APIM["API Management"] %% Commented out in the code
+            end
+
+            %% App Service Inbound Subnet
+            subgraph ASI_SUBNET["AppServiceInboundSubnet"]
+                ASI_NSG["App Service Inbound NSG"]
+            end
+
+            %% App Service Outbound Subnet
+            subgraph ASO_SUBNET["AppServiceOutboundSubnet"]
+                ASO_NSG["App Service Outbound NSG"]
+                WEBAPP["Web App"]
+                APIAPP["API App"]
+            end
+
+            %% Private Endpoint Subnet
+            subgraph PE_SUBNET["PrivateEndpointSubnet"]
+                PE_NSG["Private Endpoint NSG"]
+                OPENAI_PE["OpenAI PE"]
+                DOCINT_PE["Document Intelligence PE"]
+                SEARCH_PE["AI Search PE"]
+                APP_PE["App Service PE"]
+            end
+
+            %% Reserved Subnet
+            subgraph RES_SUBNET["ReservedSubnet"]
+                RES_NSG["Reserved NSG"]
+            end
+        end
+
+        %% Standalone resources
+        APP_PLAN["App Service Plan"]
+
+        OPENAI["Azure OpenAI"]
+        DOC_INT["Document Intelligence"]
+        SEARCH["Azure AI Search"]
+
+        APP_INSIGHTS["Application Insights"]
+        ACTION_GROUP["Monitor Action Group"]
+    end
+
+    %% Connections between resources
+    WEBAPP --> APP_PLAN
+    APIAPP --> APP_PLAN
+    APP_PE --> WEBAPP
+    OPENAI_PE --> OPENAI
+    DOCINT_PE --> DOC_INT
+    SEARCH_PE --> SEARCH
+    WEBAPP --> APP_INSIGHTS
+    APIAPP --> APP_INSIGHTS
+```
 
 > [!IMPORTANT]
 > As the overall AVM framework is not GA (generally available) yet - the CI framework and test automation is not fully functional and implemented across all supported languages yet - breaking changes are expected, and additional customer feedback is yet to be gathered and incorporated. Hence, modules **MUST NOT** be published at version `1.0.0` or higher at this time.
@@ -23,32 +100,26 @@ The following requirements are needed by this module:
 
 - <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (~> 1.5)
 
-- <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (~> 3.71)
+- <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (~> 4.0)
 
 - <a name="requirement_modtm"></a> [modtm](#requirement\_modtm) (~> 0.3)
 
 - <a name="requirement_random"></a> [random](#requirement\_random) (~> 3.5)
 
-## Providers
-
-The following providers are used by this module:
-
-- <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) (~> 3.71)
-
-- <a name="provider_modtm"></a> [modtm](#provider\_modtm) (~> 0.3)
-
-- <a name="provider_random"></a> [random](#provider\_random) (~> 3.5)
-
 ## Resources
 
 The following resources are used by this module:
 
-- [azurerm_management_lock.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/management_lock) (resource)
-- [azurerm_private_endpoint.this_managed_dns_zone_groups](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/private_endpoint) (resource)
-- [azurerm_private_endpoint.this_unmanaged_dns_zone_groups](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/private_endpoint) (resource)
-- [azurerm_private_endpoint_application_security_group_association.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/private_endpoint_application_security_group_association) (resource)
-- [azurerm_resource_group.TODO](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
-- [azurerm_role_assignment.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_assignment) (resource)
+- [azurerm_api_management.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/api_management) (resource)
+- [azurerm_application_insights.appinsights](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/application_insights) (resource)
+- [azurerm_cognitive_account.document_intelligence](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/cognitive_account) (resource)
+- [azurerm_cognitive_account.openai](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/cognitive_account) (resource)
+- [azurerm_linux_web_app.apiapp](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/linux_web_app) (resource)
+- [azurerm_linux_web_app.webapp](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/linux_web_app) (resource)
+- [azurerm_monitor_action_group.smart_detection](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/monitor_action_group) (resource)
+- [azurerm_resource_group.openai_rg](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
+- [azurerm_search_service.search](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/search_service) (resource)
+- [azurerm_service_plan.plan](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/service_plan) (resource)
 - [modtm_telemetry.telemetry](https://registry.terraform.io/providers/azure/modtm/latest/docs/resources/telemetry) (resource)
 - [random_uuid.telemetry](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/uuid) (resource)
 - [azurerm_client_config.telemetry](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/client_config) (data source)
@@ -65,79 +136,199 @@ Description: Azure region where the resource should be deployed.
 
 Type: `string`
 
-### <a name="input_name"></a> [name](#input\_name)
-
-Description: The name of the this resource.
-
-Type: `string`
-
-### <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name)
-
-Description: The resource group where the resources will be deployed.
-
-Type: `string`
-
 ## Optional Inputs
 
 The following input variables are optional (have default values):
 
-### <a name="input_customer_managed_key"></a> [customer\_managed\_key](#input\_customer\_managed\_key)
+### <a name="input_api_management"></a> [api\_management](#input\_api\_management)
 
-Description: A map describing customer-managed keys to associate with the resource. This includes the following properties:
-- `key_vault_resource_id` - The resource ID of the Key Vault where the key is stored.
-- `key_name` - The name of the key.
-- `key_version` - (Optional) The version of the key. If not specified, the latest version is used.
-- `user_assigned_identity` - (Optional) An object representing a user-assigned identity with the following properties:
-  - `resource_id` - The resource ID of the user-assigned identity.
+Description: Attributes for the API Management resource
 
 Type:
 
 ```hcl
 object({
-    key_vault_resource_id = string
-    key_name              = string
-    key_version           = optional(string, null)
-    user_assigned_identity = optional(object({
-      resource_id = string
-    }), null)
+    publisher_email = string
+    publisher_name  = string
+    sku_name        = string
+    zones           = list(string)
   })
 ```
 
-Default: `null`
+Default:
 
-### <a name="input_diagnostic_settings"></a> [diagnostic\_settings](#input\_diagnostic\_settings)
+```json
+{
+  "publisher_email": "na@na.na",
+  "publisher_name": "na",
+  "sku_name": "Premium_2",
+  "zones": [
+    "1",
+    "2"
+  ]
+}
+```
 
-Description: A map of diagnostic settings to create on the Key Vault. The map key is deliberately arbitrary to avoid issues where map keys maybe unknown at plan time.
+### <a name="input_apiapp_settings"></a> [apiapp\_settings](#input\_apiapp\_settings)
 
-- `name` - (Optional) The name of the diagnostic setting. One will be generated if not set, however this will not be unique if you want to create multiple diagnostic setting resources.
-- `log_categories` - (Optional) A set of log categories to send to the log analytics workspace. Defaults to `[]`.
-- `log_groups` - (Optional) A set of log groups to send to the log analytics workspace. Defaults to `["allLogs"]`.
-- `metric_categories` - (Optional) A set of metric categories to send to the log analytics workspace. Defaults to `["AllMetrics"]`.
-- `log_analytics_destination_type` - (Optional) The destination type for the diagnostic setting. Possible values are `Dedicated` and `AzureDiagnostics`. Defaults to `Dedicated`.
-- `workspace_resource_id` - (Optional) The resource ID of the log analytics workspace to send logs and metrics to.
-- `storage_account_resource_id` - (Optional) The resource ID of the storage account to send logs and metrics to.
-- `event_hub_authorization_rule_resource_id` - (Optional) The resource ID of the event hub authorization rule to send logs and metrics to.
-- `event_hub_name` - (Optional) The name of the event hub. If none is specified, the default event hub will be selected.
-- `marketplace_partner_resource_id` - (Optional) The full ARM resource ID of the Marketplace resource to which you would like to send Diagnostic LogsLogs.
+Description: Configuration settings for the api app including authentication, network access, and site configuration options
+
+Type:
+
+```hcl
+object({
+    ftp_publish_basic_authentication_enabled       = bool
+    https_only                                     = bool
+    public_network_access_enabled                  = bool
+    webdeploy_publish_basic_authentication_enabled = bool
+
+    site_config = object({
+      ftps_state                        = string
+      ip_restriction_default_action     = string
+      scm_ip_restriction_default_action = string
+      vnet_route_all_enabled            = bool
+    })
+  })
+```
+
+Default:
+
+```json
+{
+  "ftp_publish_basic_authentication_enabled": false,
+  "https_only": true,
+  "public_network_access_enabled": false,
+  "site_config": {
+    "ftps_state": "FtpsOnly",
+    "ip_restriction_default_action": "Deny",
+    "scm_ip_restriction_default_action": "Deny",
+    "vnet_route_all_enabled": true
+  },
+  "webdeploy_publish_basic_authentication_enabled": false
+}
+```
+
+### <a name="input_app_service_inbound_security_rules"></a> [app\_service\_inbound\_security\_rules](#input\_app\_service\_inbound\_security\_rules)
+
+Description: Security rules for the App Service inbound NSG
 
 Type:
 
 ```hcl
 map(object({
-    name                                     = optional(string, null)
-    log_categories                           = optional(set(string), [])
-    log_groups                               = optional(set(string), ["allLogs"])
-    metric_categories                        = optional(set(string), ["AllMetrics"])
-    log_analytics_destination_type           = optional(string, "Dedicated")
-    workspace_resource_id                    = optional(string, null)
-    storage_account_resource_id              = optional(string, null)
-    event_hub_authorization_rule_resource_id = optional(string, null)
-    event_hub_name                           = optional(string, null)
-    marketplace_partner_resource_id          = optional(string, null)
+    name                       = string
+    priority                   = number
+    direction                  = string
+    access                     = string
+    protocol                   = string
+    source_port_range          = string
+    destination_port_range     = string
+    source_address_prefix      = string
+    destination_address_prefix = string
   }))
 ```
 
-Default: `{}`
+Default:
+
+```json
+{
+  "allow_inbound_from_apim": {
+    "access": "Allow",
+    "destination_address_prefix": "10.0.1.0/24",
+    "destination_port_range": "*",
+    "direction": "Inbound",
+    "name": "AllowInboundFromApimToAppServiceInbound",
+    "priority": 100,
+    "protocol": "*",
+    "source_address_prefix": "10.0.0.0/24",
+    "source_port_range": "*"
+  },
+  "allow_outbound_to_apim": {
+    "access": "Allow",
+    "destination_address_prefix": "10.0.0.0/24",
+    "destination_port_range": "*",
+    "direction": "Outbound",
+    "name": "AllowOutboundFromAppServiceInboundToApim",
+    "priority": 100,
+    "protocol": "*",
+    "source_address_prefix": "10.0.1.0/24",
+    "source_port_range": "*"
+  }
+}
+```
+
+### <a name="input_app_service_outbound_security_rules"></a> [app\_service\_outbound\_security\_rules](#input\_app\_service\_outbound\_security\_rules)
+
+Description: Security rules for the App Service outbound NSG
+
+Type:
+
+```hcl
+map(object({
+    name                       = string
+    priority                   = number
+    direction                  = string
+    access                     = string
+    protocol                   = string
+    source_port_range          = string
+    destination_port_range     = string
+    source_address_prefix      = string
+    destination_address_prefix = string
+  }))
+```
+
+Default:
+
+```json
+{
+  "allow_inbound_from_private_endpoint": {
+    "access": "Allow",
+    "destination_address_prefix": "10.0.2.0/24",
+    "destination_port_range": "*",
+    "direction": "Inbound",
+    "name": "AllowInboundFromPrivateEndpointToAppServiceOutbound",
+    "priority": 100,
+    "protocol": "*",
+    "source_address_prefix": "10.0.3.0/24",
+    "source_port_range": "*"
+  },
+  "allow_outbound_to_private_endpoint": {
+    "access": "Allow",
+    "destination_address_prefix": "10.0.3.0/24",
+    "destination_port_range": "*",
+    "direction": "Outbound",
+    "name": "AllowOutboundFromAppServiceOutboundToPrivateEndpoint",
+    "priority": 100,
+    "protocol": "*",
+    "source_address_prefix": "10.0.2.0/24",
+    "source_port_range": "*"
+  }
+}
+```
+
+### <a name="input_app_service_sku"></a> [app\_service\_sku](#input\_app\_service\_sku)
+
+Description: SKU for App Service Plan
+
+Type: `string`
+
+Default: `"P0v3"`
+
+### <a name="input_cognitive_services_sku"></a> [cognitive\_services\_sku](#input\_cognitive\_services\_sku)
+
+Description: SKU for Cognitive Services
+
+Type: `string`
+
+Default: `"S0"`
+
+### <a name="input_create_resource_group"></a> [create\_resource\_group](#input\_create\_resource\_group)
+
+Description: Confirmation if Resource Group should be created by the root module or if it already exists
+
+Type: `bool`
+
+Default: `false`
 
 ### <a name="input_enable_telemetry"></a> [enable\_telemetry](#input\_enable\_telemetry)
 
@@ -149,134 +340,104 @@ Type: `bool`
 
 Default: `true`
 
-### <a name="input_lock"></a> [lock](#input\_lock)
+### <a name="input_environment"></a> [environment](#input\_environment)
 
-Description: Controls the Resource Lock configuration for this resource. The following properties can be specified:
+Description: Environment name for resource naming
 
-- `kind` - (Required) The type of lock. Possible values are `\"CanNotDelete\"` and `\"ReadOnly\"`.
-- `name` - (Optional) The name of the lock. If not specified, a name will be generated based on the `kind` value. Changing this forces the creation of a new resource.
+Type: `string`
 
-Type:
+Default: `"dev"`
 
-```hcl
-object({
-    kind = string
-    name = optional(string, null)
-  })
-```
+### <a name="input_name"></a> [name](#input\_name)
 
-Default: `null`
+Description: The name string to be applied to all resource names
 
-### <a name="input_managed_identities"></a> [managed\_identities](#input\_managed\_identities)
+Type: `string`
 
-Description: Controls the Managed Identity configuration on this resource. The following properties can be specified:
+Default: `"oaiavmptn"`
 
-- `system_assigned` - (Optional) Specifies if the System Assigned Managed Identity should be enabled.
-- `user_assigned_resource_ids` - (Optional) Specifies a list of User Assigned Managed Identity resource IDs to be assigned to this resource.
+### <a name="input_private_endpoint_security_rules"></a> [private\_endpoint\_security\_rules](#input\_private\_endpoint\_security\_rules)
 
-Type:
-
-```hcl
-object({
-    system_assigned            = optional(bool, false)
-    user_assigned_resource_ids = optional(set(string), [])
-  })
-```
-
-Default: `{}`
-
-### <a name="input_private_endpoints"></a> [private\_endpoints](#input\_private\_endpoints)
-
-Description: A map of private endpoints to create on this resource. The map key is deliberately arbitrary to avoid issues where map keys maybe unknown at plan time.
-
-- `name` - (Optional) The name of the private endpoint. One will be generated if not set.
-- `role_assignments` - (Optional) A map of role assignments to create on the private endpoint. The map key is deliberately arbitrary to avoid issues where map keys maybe unknown at plan time. See `var.role_assignments` for more information.
-- `lock` - (Optional) The lock level to apply to the private endpoint. Default is `None`. Possible values are `None`, `CanNotDelete`, and `ReadOnly`.
-- `tags` - (Optional) A mapping of tags to assign to the private endpoint.
-- `subnet_resource_id` - The resource ID of the subnet to deploy the private endpoint in.
-- `private_dns_zone_group_name` - (Optional) The name of the private DNS zone group. One will be generated if not set.
-- `private_dns_zone_resource_ids` - (Optional) A set of resource IDs of private DNS zones to associate with the private endpoint. If not set, no zone groups will be created and the private endpoint will not be associated with any private DNS zones. DNS records must be managed external to this module.
-- `application_security_group_resource_ids` - (Optional) A map of resource IDs of application security groups to associate with the private endpoint. The map key is deliberately arbitrary to avoid issues where map keys maybe unknown at plan time.
-- `private_service_connection_name` - (Optional) The name of the private service connection. One will be generated if not set.
-- `network_interface_name` - (Optional) The name of the network interface. One will be generated if not set.
-- `location` - (Optional) The Azure location where the resources will be deployed. Defaults to the location of the resource group.
-- `resource_group_name` - (Optional) The resource group where the resources will be deployed. Defaults to the resource group of this resource.
-- `ip_configurations` - (Optional) A map of IP configurations to create on the private endpoint. If not specified the platform will create one. The map key is deliberately arbitrary to avoid issues where map keys maybe unknown at plan time.
-  - `name` - The name of the IP configuration.
-  - `private_ip_address` - The private IP address of the IP configuration.
+Description: Security rules for the Private Endpoint NSG
 
 Type:
 
 ```hcl
 map(object({
-    name = optional(string, null)
-    role_assignments = optional(map(object({
-      role_definition_id_or_name             = string
-      principal_id                           = string
-      description                            = optional(string, null)
-      skip_service_principal_aad_check       = optional(bool, false)
-      condition                              = optional(string, null)
-      condition_version                      = optional(string, null)
-      delegated_managed_identity_resource_id = optional(string, null)
-    })), {})
-    lock = optional(object({
-      kind = string
-      name = optional(string, null)
-    }), null)
-    tags                                    = optional(map(string), null)
-    subnet_resource_id                      = string
-    private_dns_zone_group_name             = optional(string, "default")
-    private_dns_zone_resource_ids           = optional(set(string), [])
-    application_security_group_associations = optional(map(string), {})
-    private_service_connection_name         = optional(string, null)
-    network_interface_name                  = optional(string, null)
-    location                                = optional(string, null)
-    resource_group_name                     = optional(string, null)
-    ip_configurations = optional(map(object({
-      name               = string
-      private_ip_address = string
-    })), {})
+    name                       = string
+    priority                   = number
+    direction                  = string
+    access                     = string
+    protocol                   = string
+    source_port_range          = string
+    destination_port_range     = string
+    source_address_prefix      = string
+    destination_address_prefix = string
   }))
 ```
 
-Default: `{}`
+Default:
 
-### <a name="input_private_endpoints_manage_dns_zone_group"></a> [private\_endpoints\_manage\_dns\_zone\_group](#input\_private\_endpoints\_manage\_dns\_zone\_group)
-
-Description: Whether to manage private DNS zone groups with this module. If set to false, you must manage private DNS zone groups externally, e.g. using Azure Policy.
-
-Type: `bool`
-
-Default: `true`
-
-### <a name="input_role_assignments"></a> [role\_assignments](#input\_role\_assignments)
-
-Description: A map of role assignments to create on this resource. The map key is deliberately arbitrary to avoid issues where map keys maybe unknown at plan time.
-
-- `role_definition_id_or_name` - The ID or name of the role definition to assign to the principal.
-- `principal_id` - The ID of the principal to assign the role to.
-- `description` - The description of the role assignment.
-- `skip_service_principal_aad_check` - If set to true, skips the Azure Active Directory check for the service principal in the tenant. Defaults to false.
-- `condition` - The condition which will be used to scope the role assignment.
-- `condition_version` - The version of the condition syntax. Valid values are '2.0'.
-
-> Note: only set `skip_service_principal_aad_check` to true if you are assigning a role to a service principal.
-
-Type:
-
-```hcl
-map(object({
-    role_definition_id_or_name             = string
-    principal_id                           = string
-    description                            = optional(string, null)
-    skip_service_principal_aad_check       = optional(bool, false)
-    condition                              = optional(string, null)
-    condition_version                      = optional(string, null)
-    delegated_managed_identity_resource_id = optional(string, null)
-  }))
+```json
+{
+  "allow_inbound_from_app_service_outbound": {
+    "access": "Allow",
+    "destination_address_prefix": "10.0.3.0/24",
+    "destination_port_range": "*",
+    "direction": "Inbound",
+    "name": "AllowInboundFromAppServiceOutboundToPrivateEndpoint",
+    "priority": 100,
+    "protocol": "*",
+    "source_address_prefix": "10.0.2.0/24",
+    "source_port_range": "*"
+  },
+  "allow_outbound_to_app_service_outbound": {
+    "access": "Allow",
+    "destination_address_prefix": "10.0.2.0/24",
+    "destination_port_range": "*",
+    "direction": "Outbound",
+    "name": "AllowOutboundFromPrivateEndpointToAppServiceOutbound",
+    "priority": 100,
+    "protocol": "*",
+    "source_address_prefix": "10.0.3.0/24",
+    "source_port_range": "*"
+  }
+}
 ```
 
-Default: `{}`
+### <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name)
+
+Description: The resource group where the resources will be deployed.
+
+Type: `string`
+
+Default: `"avm-ptn-openai-cognitivesearch-rg"`
+
+### <a name="input_search_sku"></a> [search\_sku](#input\_search\_sku)
+
+Description: SKU for Azure Search Service
+
+Type: `string`
+
+Default: `"standard"`
+
+### <a name="input_subnet_prefixes"></a> [subnet\_prefixes](#input\_subnet\_prefixes)
+
+Description: Address prefixes for subnets
+
+Type: `map(string)`
+
+Default:
+
+```json
+{
+  "apim": "10.0.0.0/24",
+  "app_service_inbound": "10.0.1.0/24",
+  "app_service_outbound": "10.0.2.0/24",
+  "private_endpoint": "10.0.3.0/24",
+  "reserved": "10.0.4.0/24"
+}
+```
 
 ### <a name="input_tags"></a> [tags](#input\_tags)
 
@@ -286,21 +447,158 @@ Type: `map(string)`
 
 Default: `null`
 
+### <a name="input_vnet_address_space"></a> [vnet\_address\_space](#input\_vnet\_address\_space)
+
+Description: Address space for the virtual network
+
+Type: `list(string)`
+
+Default:
+
+```json
+[
+  "10.0.0.0/16"
+]
+```
+
+### <a name="input_webapp_settings"></a> [webapp\_settings](#input\_webapp\_settings)
+
+Description: Configuration settings for the web app including authentication, network access, and site configuration options
+
+Type:
+
+```hcl
+object({
+    ftp_publish_basic_authentication_enabled       = bool
+    https_only                                     = bool
+    public_network_access_enabled                  = bool
+    webdeploy_publish_basic_authentication_enabled = bool
+
+    site_config = object({
+      ftps_state                        = string
+      ip_restriction_default_action     = string
+      scm_ip_restriction_default_action = string
+      vnet_route_all_enabled            = bool
+    })
+  })
+```
+
+Default:
+
+```json
+{
+  "ftp_publish_basic_authentication_enabled": false,
+  "https_only": true,
+  "public_network_access_enabled": false,
+  "site_config": {
+    "ftps_state": "FtpsOnly",
+    "ip_restriction_default_action": "Deny",
+    "scm_ip_restriction_default_action": "Deny",
+    "vnet_route_all_enabled": true
+  },
+  "webdeploy_publish_basic_authentication_enabled": false
+}
+```
+
 ## Outputs
 
 The following outputs are exported:
 
-### <a name="output_private_endpoints"></a> [private\_endpoints](#output\_private\_endpoints)
+### <a name="output_application_insights_resource_id"></a> [application\_insights\_resource\_id](#output\_application\_insights\_resource\_id)
 
-Description:   A map of the private endpoints created.
+Description: The resource ID of the Application Insights.
 
-### <a name="output_resource"></a> [resource](#output\_resource)
+### <a name="output_cognitive_account_resource_id"></a> [cognitive\_account\_resource\_id](#output\_cognitive\_account\_resource\_id)
 
-Description: This is the full output for the resource.
+Description: The resource ID of the OpenAI cognitive account.
+
+### <a name="output_document_intelligence_resource_id"></a> [document\_intelligence\_resource\_id](#output\_document\_intelligence\_resource\_id)
+
+Description: The resource ID of the Document Intelligence cognitive account.
+
+### <a name="output_linux_web_app_resource_id"></a> [linux\_web\_app\_resource\_id](#output\_linux\_web\_app\_resource\_id)
+
+Description: The resource ID of the Linux Web App.
+
+### <a name="output_monitor_action_group_resource_id"></a> [monitor\_action\_group\_resource\_id](#output\_monitor\_action\_group\_resource\_id)
+
+Description: The resource ID of the Monitor Action Group.
+
+### <a name="output_resource_id"></a> [resource\_id](#output\_resource\_id)
+
+Description: The resource ID of the OpenAI service
+
+### <a name="output_search_service_resource_id"></a> [search\_service\_resource\_id](#output\_search\_service\_resource\_id)
+
+Description: The resource ID of the Azure Search Service.
+
+### <a name="output_service_plan_resource_id"></a> [service\_plan\_resource\_id](#output\_service\_plan\_resource\_id)
+
+Description: The resource ID of the App Service Plan.
 
 ## Modules
 
-No modules.
+The following Modules are called:
+
+### <a name="module_aisearch_private_endpoint"></a> [aisearch\_private\_endpoint](#module\_aisearch\_private\_endpoint)
+
+Source: Azure/avm-res-network-privateendpoint/azurerm
+
+Version: 0.2.0
+
+### <a name="module_apim_nsg"></a> [apim\_nsg](#module\_apim\_nsg)
+
+Source: Azure/avm-res-network-networksecuritygroup/azurerm
+
+Version: 0.3.0
+
+### <a name="module_app_service_inbound_nsg"></a> [app\_service\_inbound\_nsg](#module\_app\_service\_inbound\_nsg)
+
+Source: Azure/avm-res-network-networksecuritygroup/azurerm
+
+Version: 0.3.0
+
+### <a name="module_app_service_outbound_nsg"></a> [app\_service\_outbound\_nsg](#module\_app\_service\_outbound\_nsg)
+
+Source: Azure/avm-res-network-networksecuritygroup/azurerm
+
+Version: 0.3.0
+
+### <a name="module_app_service_private_endpoint"></a> [app\_service\_private\_endpoint](#module\_app\_service\_private\_endpoint)
+
+Source: Azure/avm-res-network-privateendpoint/azurerm
+
+Version: 0.2.0
+
+### <a name="module_document_intelligence_private_endpoint"></a> [document\_intelligence\_private\_endpoint](#module\_document\_intelligence\_private\_endpoint)
+
+Source: Azure/avm-res-network-privateendpoint/azurerm
+
+Version: 0.2.0
+
+### <a name="module_openai_private_endpoint"></a> [openai\_private\_endpoint](#module\_openai\_private\_endpoint)
+
+Source: Azure/avm-res-network-privateendpoint/azurerm
+
+Version: 0.2.0
+
+### <a name="module_private_endpoint_nsg"></a> [private\_endpoint\_nsg](#module\_private\_endpoint\_nsg)
+
+Source: Azure/avm-res-network-networksecuritygroup/azurerm
+
+Version: 0.3.0
+
+### <a name="module_reserved_nsg"></a> [reserved\_nsg](#module\_reserved\_nsg)
+
+Source: Azure/avm-res-network-networksecuritygroup/azurerm
+
+Version: 0.3.0
+
+### <a name="module_vnet"></a> [vnet](#module\_vnet)
+
+Source: Azure/avm-res-network-virtualnetwork/azurerm
+
+Version: 0.8.1
 
 <!-- markdownlint-disable-next-line MD041 -->
 ## Data Collection
