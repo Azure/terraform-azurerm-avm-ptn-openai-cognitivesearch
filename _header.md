@@ -1,6 +1,6 @@
-# terraform-azurerm-avm-template
+# terraform-azurerm-avm-ptn-openai-cognitivesearch
 
-This is a template repo for Terraform Azure Verified Modules.
+This is an Azure Verified Module (AVM) pattern for integrating Azure OpenAI with Azure Cognitive Search services.
 
 Things to do:
 

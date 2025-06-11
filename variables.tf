@@ -4,16 +4,16 @@ variable "location" {
   nullable    = false
 }
 
-variable "name" {
+variable "openai_name" {
   type        = string
-  description = "The name of the this resource."
+  description = "The name of the OpenAI cognitive account."
+  nullable    = false
+}
 
-  validation {
-    condition     = can(regex("TODO", var.name))
-    error_message = "The name must be TODO." # TODO remove the example below once complete:
-    #condition     = can(regex("^[a-z0-9]{5,50}$", var.name))
-    #error_message = "The name must be between 5 and 50 characters long and can only contain lowercase letters and numbers."
-  }
+variable "search_service_name" {
+  type        = string
+  description = "The name of the Azure Cognitive Search service."
+  nullable    = false
 }
 
 # This is required for most resource modules
@@ -223,6 +223,58 @@ A map of role assignments to create on this resource. The map key is deliberatel
 
 > Note: only set `skip_service_principal_aad_check` to true if you are assigning a role to a service principal.
 DESCRIPTION
+  nullable    = false
+}
+
+# OpenAI specific variables
+variable "openai_sku_name" {
+  type        = string
+  default     = "S0"
+  description = "The SKU name for the OpenAI cognitive account."
+  nullable    = false
+}
+
+# Cognitive Search specific variables
+variable "search_service_sku" {
+  type        = string
+  default     = "standard"
+  description = "The SKU for the Azure Cognitive Search service."
+  nullable    = false
+
+  validation {
+    condition     = contains(["free", "basic", "standard", "standard2", "standard3", "storage_optimized_l1", "storage_optimized_l2"], var.search_service_sku)
+    error_message = "The search service SKU must be one of: free, basic, standard, standard2, standard3, storage_optimized_l1, storage_optimized_l2."
+  }
+}
+
+variable "search_service_replica_count" {
+  type        = number
+  default     = 1
+  description = "The number of replicas for the Azure Cognitive Search service."
+  nullable    = false
+
+  validation {
+    condition     = var.search_service_replica_count >= 1 && var.search_service_replica_count <= 12
+    error_message = "The replica count must be between 1 and 12."
+  }
+}
+
+variable "search_service_partition_count" {
+  type        = number
+  default     = 1
+  description = "The number of partitions for the Azure Cognitive Search service."
+  nullable    = false
+
+  validation {
+    condition     = contains([1, 2, 3, 4, 6, 12], var.search_service_partition_count)
+    error_message = "The partition count must be one of: 1, 2, 3, 4, 6, 12."
+  }
+}
+
+variable "search_service_public_network_access_enabled" {
+  type        = bool
+  default     = true
+  description = "Whether public network access is enabled for the Azure Cognitive Search service."
   nullable    = false
 }
 
