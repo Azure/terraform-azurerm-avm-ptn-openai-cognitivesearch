@@ -1,3 +1,13 @@
+output "openai_account" {
+  description = "The OpenAI cognitive account resource."
+  value       = azurerm_cognitive_account.openai
+}
+
+output "search_service" {
+  description = "The Azure Cognitive Search service resource."
+  value       = azurerm_search_service.this
+}
+
 output "private_endpoints" {
   description = <<DESCRIPTION
   A map of the private endpoints created.
