@@ -1,0 +1,10 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Azure/azure-verified-modules-tools/main/src/Avm.Authoring/Resources/Schemas/v1/avm-module-metadata.schema.json",
+  "moduleDisplayName": "Corporate Line of Business (LoB) ChatBot ",
+  "moduleDescription": "AVM Pattern Module for Corporate Line of Business (LoB) ChatBot ",
+  "canonicalType": "openai-cognitivesearch",
+  "owners": [
+    "mikestiers"
+  ],
+  "telemetryIdPrefix": "46d3xtrf.ptn.7a7efb3"
+}
